@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+# App data — never commit these
+sessions/
+downloads/
+*.session
+session-*
+
+# Vercel
+.vercel/
+
+# OS / editor
+.DS_Store
+*.log
+.idea/
+.vscode/

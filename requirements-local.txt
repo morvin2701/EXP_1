@@ -1,0 +1,4 @@
+# Full local install: base deps + browser login import.
+# Use this one when running on your own computer:  pip install -r requirements-local.txt
+-r requirements.txt
+browser-cookie3>=0.19

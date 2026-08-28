@@ -1,0 +1,4 @@
+# Base dependencies — used by both the local app and the Vercel deploy.
+flask>=2.3
+instaloader>=4.10
+requests>=2.28
