@@ -82,6 +82,14 @@
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none; }
   .account-btn.on { color: var(--text); }
   .account-btn.on .dot { background: var(--ok); box-shadow: 0 0 8px rgba(52,211,153,.7); }
+  .nav-switch {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 14px;
+    color: var(--text-2); font-size: .86rem; font-weight: 600;
+    text-decoration: none; transition: border-color .15s, background .15s, color .15s;
+  }
+  .nav-switch:hover { border-color: var(--border-strong); background: var(--surface-2); color: var(--text); }
 
   /* ================= hero layout ================= */
   .layout {
@@ -368,9 +376,12 @@
       </div>
       <div class="brand-name">Reel<span>Grab</span></div>
     </div>
-    <button class="account-btn" id="accountBtn" title="Instagram account">
-      <span class="dot"></span><span id="accountLabel">Sign in</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a class="nav-switch" href="http://127.0.0.1:5002" title="Open MarkEraser (watermark remover)">🧹 <span>Eraser</span></a>
+      <button class="account-btn" id="accountBtn" title="Instagram account">
+        <span class="dot"></span><span id="accountLabel">Sign in</span>
+      </button>
+    </div>
   </div>
 </div>
 

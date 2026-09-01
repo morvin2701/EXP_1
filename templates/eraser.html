@@ -32,6 +32,8 @@
   .brand-name span{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .ff-pill{font-size:.76rem;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text-3)}
   .ff-pill.on{color:var(--ok);border-color:rgba(52,211,153,.25)}
+  .nav-switch{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 13px;color:var(--text-2);font-size:.84rem;font-weight:600;text-decoration:none;transition:border-color .15s,background .15s,color .15s}
+  .nav-switch:hover{border-color:var(--border-strong);background:var(--surface-2);color:var(--text)}
 
   .hero{text-align:center;padding:40px 0 26px}
   .hero h1{font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800;letter-spacing:-.03em;line-height:1.1}
@@ -107,7 +109,10 @@
       <div class="brand-mark"><svg viewBox="0 0 24 24" fill="#fff"><path d="M7 15 15 7l3 3-8 8H7z"/><path d="M5 21h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>
       <div class="brand-name">Mark<span>Eraser</span></div>
     </div>
-    <span class="ff-pill {{ 'on' if has_ffmpeg else '' }}">{{ 'ffmpeg ready' if has_ffmpeg else 'video: basic mode' }}</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a class="nav-switch" href="http://127.0.0.1:5001" title="Open ReelGrab (Instagram downloader)">⚡ <span>Downloader</span></a>
+      <span class="ff-pill {{ 'on' if has_ffmpeg else '' }}">{{ 'ffmpeg ready' if has_ffmpeg else 'video: basic mode' }}</span>
+    </div>
   </div>
 </div>
 
