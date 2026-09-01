@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarkEraser — Watermark & Object Remover</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='1' x2='1' y2='0'><stop offset='0' stop-color='%2306b6d4'/><stop offset='1' stop-color='%238b5cf6'/></linearGradient></defs><rect width='100' height='100' rx='24' fill='url(%23g)'/><path d='M28 62 58 32l14 14-30 30H28z' fill='white'/><path d='M20 84h60' stroke='white' stroke-width='7' stroke-linecap='round'/></svg>">
+<style>
+  :root{
+    --bg:#0a0a0f;--surface:#13131a;--surface-2:#1b1b25;--surface-3:#23232f;
+    --border:rgba(255,255,255,.07);--border-strong:rgba(255,255,255,.13);
+    --text:#f4f4f8;--text-2:#a8a8b8;--text-3:#63637a;
+    --grad:linear-gradient(45deg,#06b6d4,#8b5cf6);
+    --ok:#34d399;--ok-bg:rgba(52,211,153,.1);
+    --err:#fb7185;--err-bg:rgba(251,113,133,.1);
+    --info:#a5b4fc;--info-bg:rgba(99,102,241,.12);
+    --warn:#fcd34d;--warn-bg:rgba(252,211,77,.1);
+    --radius:18px;--shadow:0 24px 60px -18px rgba(0,0,0,.65);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;background:radial-gradient(900px 600px at 10% -10%,rgba(6,182,212,.14),transparent 70%),radial-gradient(900px 550px at 100% 5%,rgba(139,92,246,.13),transparent 70%);pointer-events:none;z-index:0}
+  .container{width:100%;max-width:980px;margin:0 auto;padding:0 24px 60px;position:relative;z-index:1}
+
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(10,10,15,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+  .topbar-inner{max-width:980px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand-mark{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;box-shadow:0 4px 18px -4px rgba(139,92,246,.5);flex:none}
+  .brand-mark svg{width:17px;height:17px}
+  .brand-name{font-size:1.05rem;font-weight:800;letter-spacing:-.02em}
+  .brand-name span{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .ff-pill{font-size:.76rem;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text-3)}
+  .ff-pill.on{color:var(--ok);border-color:rgba(52,211,153,.25)}
+
+  .hero{text-align:center;padding:40px 0 26px}
+  .hero h1{font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800;letter-spacing:-.03em;line-height:1.1}
+  .hero h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p{color:var(--text-2);margin-top:12px;font-size:1rem;max-width:56ch;margin-inline:auto}
+
+  .modeswitch{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);padding:4px;border-radius:12px;width:max-content;margin:0 auto 22px}
+  .modeswitch button{border:none;background:none;cursor:pointer;color:var(--text-3);font-family:inherit;font-size:.9rem;font-weight:700;padding:9px 22px;border-radius:9px;transition:color .15s,background .15s}
+  .modeswitch button.active{background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+
+  .drop{border:2px dashed var(--border-strong);border-radius:14px;padding:44px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+  .drop:hover,.drop.drag{border-color:#8b5cf6;background:rgba(139,92,246,.06)}
+  .drop .ic{font-size:2.2rem}
+  .drop h3{font-size:1rem;font-weight:700;margin-top:10px}
+  .drop p{color:var(--text-3);font-size:.85rem;margin-top:4px}
+
+  .stage{display:none}
+  .stage.show{display:block}
+  .canvas-wrap{position:relative;display:inline-block;max-width:100%;border-radius:12px;overflow:hidden;background:#000;line-height:0;touch-action:none}
+  .canvas-wrap img{display:block;max-width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+  #maskCanvas,#boxCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+  .stage-center{text-align:center}
+
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:16px;justify-content:center}
+  .tool{display:flex;align-items:center;gap:9px;font-size:.85rem;color:var(--text-2)}
+  input[type=range]{accent-color:#8b5cf6}
+  .hintbar{text-align:center;color:var(--text-3);font-size:.85rem;margin-top:14px}
+  .hintbar b{color:var(--text-2);font-weight:600}
+  .qtoggle{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+  .qbtn{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-family:inherit;font-weight:700;font-size:.92rem;color:var(--text-2);background:var(--surface-2);border:1.5px solid var(--border);border-radius:12px;padding:12px 22px;transition:border-color .15s,color .15s,background .15s}
+  .qbtn span{font-size:.72rem;font-weight:500;color:var(--text-3)}
+  .qbtn.active{border-color:#8b5cf6;color:var(--text);background:rgba(139,92,246,.08)}
+  .qbtn.active span{color:var(--info)}
+
+  .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px}
+  .btn{border:none;cursor:pointer;font-family:inherit;font-weight:700;border-radius:11px;transition:filter .15s,transform .08s,opacity .15s;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;font-size:.94rem}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-grad{background:var(--grad);box-shadow:0 6px 20px -6px rgba(139,92,246,.5)}
+  .btn-grad:hover:not(:disabled){filter:brightness(1.12)}
+  .btn-soft{background:var(--surface-3);color:var(--text-2);font-weight:600}
+  .btn-soft:hover:not(:disabled){color:var(--text);filter:brightness(1.15)}
+
+  .status{margin-top:16px;border-radius:12px;padding:13px 15px;font-size:.9rem;display:none;line-height:1.55;text-align:center}
+  .status.show{display:block}
+  .status.info{background:var(--info-bg);color:var(--info)}
+  .status.ok{background:var(--ok-bg);color:var(--ok)}
+  .status.err{background:var(--err-bg);color:var(--err)}
+  .status.warn{background:var(--warn-bg);color:var(--warn)}
+  .spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.25);border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .result{display:none;margin-top:20px;text-align:center}
+  .result.show{display:block}
+  .result h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:12px}
+  .result img,.result video{max-width:100%;border-radius:12px;border:1px solid var(--border)}
+
+  .note{color:var(--text-3);font-size:.82rem;line-height:1.55;margin-top:20px;text-align:center}
+  .note b{color:var(--text-2);font-weight:600}
+  footer{text-align:center;color:var(--text-3);font-size:.78rem;margin-top:36px;line-height:1.7}
+  footer a{color:var(--text-2);text-decoration:none}
+
+  @media (max-width:640px){.container{padding:0 16px 48px}.card{padding:18px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="#fff"><path d="M7 15 15 7l3 3-8 8H7z"/><path d="M5 21h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div class="brand-name">Mark<span>Eraser</span></div>
+    </div>
+    <span class="ff-pill {{ 'on' if has_ffmpeg else '' }}">{{ 'ffmpeg ready' if has_ffmpeg else 'video: basic mode' }}</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <h1>Erase watermarks &amp; objects<br>from <em>photos and videos</em></h1>
+    <p>Upload your media, brush over what you want gone, and it fills it in. Runs entirely on your computer.</p>
+  </div>
+
+  <div class="modeswitch">
+    <button class="active" id="modePhoto">🖼️ Photo</button>
+    <button id="modeVideo">🎬 Video</button>
+  </div>
+
+  <div class="card">
+    <!-- upload -->
+    <div class="drop" id="drop">
+      <div class="ic">⬆️</div>
+      <h3 id="dropTitle">Drop a photo here, or click to choose</h3>
+      <p id="dropSub">PNG or JPG · stays on your machine</p>
+      <input type="file" id="file" accept="image/*" hidden>
+    </div>
+
+    <!-- PHOTO stage -->
+    <div class="stage" id="photoStage">
+      <div class="stage-center">
+        <div class="canvas-wrap" id="photoWrap">
+          <img id="photoImg" alt="">
+          <canvas id="maskCanvas"></canvas>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="tool">🖌️ Brush <input type="range" id="brush" min="6" max="80" value="26"></div>
+        <button class="btn btn-soft" id="undoBtn" style="padding:9px 16px">↶ Undo</button>
+        <button class="btn btn-soft" id="clearMask" style="padding:9px 16px">Clear</button>
+      </div>
+      <div class="hintbar">Paint over the watermark in <b>purple</b>. Cover it completely for the best fill.</div>
+      <div class="actions">
+        <button class="btn btn-soft" id="photoReset">Start over</button>
+        <button class="btn btn-grad" id="photoRun">✨ Erase &amp; download</button>
+      </div>
+    </div>
+
+    <!-- VIDEO stage -->
+    <div class="stage" id="videoStage">
+      <div class="stage-center">
+        <div class="canvas-wrap" id="videoWrap">
+          <img id="videoFrame" alt="">
+          <canvas id="boxCanvas"></canvas>
+        </div>
+      </div>
+      <div class="hintbar">Drag a <b>box</b> over the watermark. It's removed in that spot across every frame.</div>
+      {% if has_ai %}
+      <div class="qtoggle">
+        <button class="qbtn active" id="qFast" data-q="fast">
+          ⚡ Fast<span>delogo · seconds</span>
+        </button>
+        <button class="qbtn" id="qHd" data-q="hd">
+          ✨ HD AI<span>ProPainter · slower, best quality</span>
+        </button>
+      </div>
+      {% endif %}
+      <div class="actions">
+        <button class="btn btn-soft" id="videoReset">Start over</button>
+        <button class="btn btn-grad" id="videoRun">✨ Remove &amp; download</button>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="result" id="result">
+      <h3>Result</h3>
+      <div id="resultMedia"></div>
+    </div>
+  </div>
+
+  <p class="note">
+    <b>For content you own or have the rights to edit.</b> This tool doesn't upload anything —
+    all processing happens locally on your Mac.
+  </p>
+
+  <footer>MarkEraser · runs 100% offline on your computer</footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const HAS_FFMPEG = {{ 'true' if has_ffmpeg else 'false' }};
+const statusEl = $("status"), resultEl = $("result"), resultMedia = $("resultMedia");
+let mode = "photo";
+
+function setStatus(type, html){ statusEl.className = "status show " + type; statusEl.innerHTML = html; }
+function clearStatus(){ statusEl.className = "status"; statusEl.innerHTML = ""; }
+function showResult(node){ resultMedia.innerHTML = ""; resultMedia.appendChild(node); resultEl.classList.add("show"); }
+function hideResult(){ resultEl.classList.remove("show"); resultMedia.innerHTML = ""; }
+
+function triggerDownload(blob, name){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/* ---------- mode switch ---------- */
+function setMode(m){
+  mode = m;
+  $("modePhoto").classList.toggle("active", m === "photo");
+  $("modeVideo").classList.toggle("active", m === "video");
+  $("file").setAttribute("accept", m === "photo" ? "image/*" : "video/*");
+  $("dropTitle").textContent = m === "photo" ? "Drop a photo here, or click to choose" : "Drop a video here, or click to choose";
+  $("dropSub").textContent = m === "photo" ? "PNG or JPG · stays on your machine" : "MP4 or MOV · stays on your machine";
+  resetAll();
+}
+$("modePhoto").addEventListener("click", () => setMode("photo"));
+$("modeVideo").addEventListener("click", () => setMode("video"));
+
+function resetAll(){
+  $("drop").style.display = "block";
+  $("photoStage").classList.remove("show");
+  $("videoStage").classList.remove("show");
+  clearStatus(); hideResult();
+  $("file").value = "";
+}
+$("photoReset").addEventListener("click", resetAll);
+$("videoReset").addEventListener("click", resetAll);
+
+/* ---------- file picking ---------- */
+const drop = $("drop");
+drop.addEventListener("click", () => $("file").click());
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("drag"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
+drop.addEventListener("drop", (e) => {
+  e.preventDefault(); drop.classList.remove("drag");
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+$("file").addEventListener("change", (e) => { if (e.target.files.length) handleFile(e.target.files[0]); });
+
+let currentFile = null, videoId = null, natW = 0, natH = 0;
+
+function handleFile(f){
+  currentFile = f;
+  clearStatus(); hideResult();
+  if (mode === "photo") loadPhoto(f);
+  else loadVideo(f);
+}
+
+/* ================= PHOTO ================= */
+const maskCanvas = $("maskCanvas"), mctx = maskCanvas.getContext("2d");
+let painting = false, strokes = [], lastPt = null;
+
+function loadPhoto(f){
+  const img = $("photoImg");
+  img.onload = () => {
+    natW = img.naturalWidth; natH = img.naturalHeight;
+    maskCanvas.width = natW; maskCanvas.height = natH;
+    mctx.clearRect(0, 0, natW, natH);
+    strokes = [];
+    $("drop").style.display = "none";
+    $("photoStage").classList.add("show");
+  };
+  img.src = URL.createObjectURL(f);
+}
+
+function ptFromEvent(e, canvas){
+  const r = canvas.getBoundingClientRect();
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+  return { x: cx / r.width * canvas.width, y: cy / r.height * canvas.height };
+}
+function brushSize(){ return +$("brush").value / 100 * Math.max(natW, natH) * 0.5 + (+$("brush").value); }
+
+function drawDot(p){
+  mctx.fillStyle = "rgba(139,92,246,.85)";
+  mctx.beginPath(); mctx.arc(p.x, p.y, brushSize()/2, 0, Math.PI*2); mctx.fill();
+}
+function drawLine(a, b){
+  mctx.strokeStyle = "rgba(139,92,246,.85)";
+  mctx.lineWidth = brushSize(); mctx.lineCap = "round"; mctx.lineJoin = "round";
+  mctx.beginPath(); mctx.moveTo(a.x, a.y); mctx.lineTo(b.x, b.y); mctx.stroke();
+}
+function startPaint(e){ e.preventDefault(); painting = true; mctx.save(); strokes.push(maskCanvas.toDataURL()); const p = ptFromEvent(e, maskCanvas); lastPt = p; drawDot(p); }
+function movePaint(e){ if (!painting) return; e.preventDefault(); const p = ptFromEvent(e, maskCanvas); drawLine(lastPt, p); lastPt = p; }
+function endPaint(){ painting = false; }
+maskCanvas.addEventListener("mousedown", startPaint);
+maskCanvas.addEventListener("mousemove", movePaint);
+window.addEventListener("mouseup", endPaint);
+maskCanvas.addEventListener("touchstart", startPaint, {passive:false});
+maskCanvas.addEventListener("touchmove", movePaint, {passive:false});
+maskCanvas.addEventListener("touchend", endPaint);
+
+$("undoBtn").addEventListener("click", () => {
+  if (!strokes.length) return;
+  const data = strokes.pop();
+  const im = new Image();
+  im.onload = () => { mctx.clearRect(0,0,natW,natH); mctx.drawImage(im,0,0); };
+  im.src = data;
+});
+$("clearMask").addEventListener("click", () => { mctx.clearRect(0,0,natW,natH); strokes = []; });
+
+$("photoRun").addEventListener("click", async () => {
+  const blank = document.createElement("canvas"); blank.width = natW; blank.height = natH;
+  if (maskCanvas.toDataURL() === blank.toDataURL()) { setStatus("err", "Paint over the watermark first."); return; }
+
+  $("photoRun").disabled = true;
+  setStatus("info", '<span class="spinner"></span>Erasing…');
+  hideResult();
+  const fd = new FormData();
+  fd.append("media", currentFile);
+  fd.append("mask", maskCanvas.toDataURL("image/png"));
+  try {
+    const r = await fetch("/api/erase/image", { method: "POST", body: fd });
+    if (!r.ok) { let m="Failed."; try{m=(await r.json()).error||m}catch(e){}; setStatus("err", m); }
+    else {
+      const blob = await r.blob();
+      const img = document.createElement("img"); img.src = URL.createObjectURL(blob);
+      showResult(img);
+      triggerDownload(blob, "cleaned.png");
+      setStatus("ok", "Done ✓ Saved as cleaned.png");
+    }
+  } catch(e){ setStatus("err", "Couldn't reach the server."); }
+  $("photoRun").disabled = false;
+});
+
+/* ================= VIDEO ================= */
+const boxCanvas = $("boxCanvas"), bctx = boxCanvas.getContext("2d");
+let boxing = false, boxStart = null, box = null;
+
+async function loadVideo(f){
+  setStatus("info", '<span class="spinner"></span>Reading video…');
+  const fd = new FormData(); fd.append("media", f);
+  try {
+    const r = await fetch("/api/video/prepare", { method: "POST", body: fd });
+    const d = await r.json();
+    if (!r.ok) { setStatus("err", d.error || "Couldn't read video."); return; }
+    clearStatus();
+    videoId = d.id; natW = d.w; natH = d.h;
+    const img = $("videoFrame");
+    img.onload = () => {
+      boxCanvas.width = natW; boxCanvas.height = natH;
+      bctx.clearRect(0,0,natW,natH); box = null;
+      $("drop").style.display = "none";
+      $("videoStage").classList.add("show");
+      if (!HAS_FFMPEG) setStatus("warn", "Basic video mode (no ffmpeg): output has no audio and lower quality. For best results, install ffmpeg — see below.");
+    };
+    img.src = d.frame;
+  } catch(e){ setStatus("err", "Couldn't reach the server."); }
+}
+
+function drawBox(){
+  bctx.clearRect(0,0,natW,natH);
+  if (!box) return;
+  bctx.fillStyle = "rgba(139,92,246,.25)";
+  bctx.strokeStyle = "#8b5cf6"; bctx.lineWidth = Math.max(2, natW/300);
+  bctx.fillRect(box.x, box.y, box.w, box.h);
+  bctx.strokeRect(box.x, box.y, box.w, box.h);
+}
+function startBox(e){ e.preventDefault(); boxing = true; boxStart = ptFromEvent(e, boxCanvas); box = {x:boxStart.x,y:boxStart.y,w:0,h:0}; }
+function moveBox(e){
+  if (!boxing) return; e.preventDefault();
+  const p = ptFromEvent(e, boxCanvas);
+  box = { x: Math.min(p.x,boxStart.x), y: Math.min(p.y,boxStart.y), w: Math.abs(p.x-boxStart.x), h: Math.abs(p.y-boxStart.y) };
+  drawBox();
+}
+function endBox(){ boxing = false; }
+boxCanvas.addEventListener("mousedown", startBox);
+boxCanvas.addEventListener("mousemove", moveBox);
+window.addEventListener("mouseup", endBox);
+boxCanvas.addEventListener("touchstart", startBox, {passive:false});
+boxCanvas.addEventListener("touchmove", moveBox, {passive:false});
+boxCanvas.addEventListener("touchend", endBox);
+
+/* quality toggle */
+let quality = "fast";
+const qFast = $("qFast"), qHd = $("qHd");
+if (qFast && qHd) {
+  qFast.addEventListener("click", () => { quality = "fast"; qFast.classList.add("active"); qHd.classList.remove("active"); });
+  qHd.addEventListener("click", () => { quality = "hd"; qHd.classList.add("active"); qFast.classList.remove("active"); });
+}
+
+$("videoRun").addEventListener("click", async () => {
+  if (!box || box.w < 4 || box.h < 4) { setStatus("err", "Drag a box over the watermark first."); return; }
+  $("videoRun").disabled = true;
+  const hd = quality === "hd";
+  setStatus("info", '<span class="spinner"></span>' + (hd
+    ? "AI processing (ProPainter)… this can take 30 s to several minutes depending on length. Please keep this tab open."
+    : "Processing video…"));
+  hideResult();
+  try {
+    const r = await fetch("/api/video/process", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ id: videoId, quality, x: Math.round(box.x), y: Math.round(box.y), w: Math.round(box.w), h: Math.round(box.h) })
+    });
+    if (!r.ok) { let m="Failed."; try{m=(await r.json()).error||m}catch(e){}; setStatus("err", m); }
+    else {
+      const blob = await r.blob();
+      const v = document.createElement("video"); v.src = URL.createObjectURL(blob); v.controls = true;
+      showResult(v);
+      triggerDownload(blob, "cleaned.mp4");
+      setStatus("ok", "Done ✓ Saved as cleaned.mp4");
+    }
+  } catch(e){ setStatus("err", "Couldn't reach the server."); }
+  $("videoRun").disabled = false;
+});
+</script>
+</body>
+</html>

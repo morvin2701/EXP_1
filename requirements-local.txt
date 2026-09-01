@@ -1,4 +1,9 @@
-# Full local install: base deps + browser login import.
+# Full local install: base deps + browser login + MarkEraser (watermark remover).
 # Use this one when running on your own computer:  pip install -r requirements-local.txt
 -r requirements.txt
 browser-cookie3>=0.19
+
+# MarkEraser (photo/video object & watermark removal)
+opencv-python-headless>=4.8
+numpy>=1.24
+pillow>=10.0

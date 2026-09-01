@@ -87,4 +87,34 @@ start.sh                # One-command local launcher
 
 ---
 
+---
+
+## 🧹 MarkEraser — watermark / object remover (separate tool)
+
+A standalone local app for erasing watermarks or objects from **your own**
+photos and videos. Fully offline.
+
+```bash
+./start_eraser.sh
+```
+
+Open **http://127.0.0.1:5002**.
+
+- **Photos** — brush over the mark → content-aware inpainting → `cleaned.png`.
+- **Videos** — two modes:
+  - **⚡ Fast** — ffmpeg `delogo`; great for fixed semi-transparent marks, keeps
+    audio, processes in seconds. (Needs ffmpeg: `brew install ffmpeg`.)
+  - **✨ HD AI** — [ProPainter](https://github.com/sczhou/ProPainter) deep-learning
+    temporal inpainting; genuinely clean even for opaque logos, runs on Apple
+    MPS. Slower (30 s–several minutes). Enable it once with:
+    ```bash
+    ./setup_ai.sh      # installs PyTorch + ProPainter (~2 GB)
+    ```
+    HD processing is capped to ~720p-equivalent for memory safety, and the
+    original audio is muxed back automatically.
+
+**Intended for content you own or have the rights to edit.**
+
+---
+
 For personal use only. Respect creators’ rights and Instagram’s Terms of Use.
